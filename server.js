@@ -1,7 +1,8 @@
-// Minimal test server for llama.cpp Node.js integration
+// GoDaddy-compatible server for llama.cpp API
 const express = require('express');
 const app = express();
 
+// Health check
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
@@ -10,17 +11,17 @@ app.get('/health', (req, res) => {
   });
 });
 
-app.get('/test', async (req, res) => {
-  try {
-    // Placeholder for llama.cpp integration
-    res.json({ 
-      status: 'llama-cpp', 
-      note: 'llama-cpp-wasm is not available, will implement custom GGUF loader',
-      success: true 
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// Chat endpoint - llama.cpp not available in this minimal version
+app.post('/v1/chat/completions', express.json({limit: '1mb'}), async (req, res) => {
+  res.status(503).json({ 
+    error: 'llama.cpp not loaded in minimal mode',
+    note: 'This is a fallback server - implement actual llama.cpp integration separately'
+  });
+});
+
+// Models endpoint
+app.get('/v1/models', (req, res) => {
+  res.json({ data: [{ id: 'gpt2-llama-cpp', object: 'model' }] });
 });
 
 const PORT = process.env.PORT || 3000;
@@ -28,5 +29,4 @@ const HOST = '0.0.0.0';
 
 app.listen(PORT, HOST, () => {
   console.log(`llama.cpp API running on ${HOST}:${PORT}`);
-  console.log(`Node version: ${process.version}`);
 });
