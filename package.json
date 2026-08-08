@@ -1,0 +1,14 @@
+{
+  "name": "free-llm-llamacpp",
+  "version": "1.0.0",
+  "description": "Self-hosted free LLM API using llama.cpp via Node.js bindings",
+  "main": "server.js",
+  "scripts": {
+    "install": "node install-bindgfs.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "llama-cpp-wasm": "^2.0.0"
+  }
+}
