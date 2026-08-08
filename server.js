@@ -1,32 +1,37 @@
-// GoDaddy-compatible server for llama.cpp API
-const express = require('express');
-const app = express();
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    node_version: process.version,
-    platform: process.platform
-  });
-});
-
-// Chat endpoint - llama.cpp not available in this minimal version
-app.post('/v1/chat/completions', express.json({limit: '1mb'}), async (req, res) => {
-  res.status(503).json({ 
-    error: 'llama.cpp not loaded in minimal mode',
-    note: 'This is a fallback server - implement actual llama.cpp integration separately'
-  });
-});
-
-// Models endpoint
-app.get('/v1/models', (req, res) => {
-  res.json({ data: [{ id: 'gpt2-llama-cpp', object: 'model' }] });
-});
+// llama.cpp API - GoDaddy compatible (minimal version)
+const http = require('http');
 
 const PORT = process.env.PORT || 3000;
 const HOST = '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
+const server = http.createServer((req, res) => {
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      status: 'ok', 
+      node_version: process.version,
+      timestamp: new Date().toISOString()
+    }));
+  } else if (req.url === '/v1/models') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ 
+      data: [{ id: 'gpt2-llama-cpp', object: 'model' }] 
+    }));
+  } else {
+    res.writeHead(404, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Not found' }));
+  }
+});
+
+server.listen(PORT, HOST, () => {
   console.log(`llama.cpp API running on ${HOST}:${PORT}`);
+  console.log(`Node version: ${process.version}`);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('[ERROR] Uncaught exception:', err.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[ERROR] Unhandled rejection:', reason);
 });
