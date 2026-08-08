@@ -2,9 +2,10 @@ const express = require('express');
 const { LLM } = require('llama-cpp-wasm');
 
 const app = express();
-app.use(express.json());
+app.use(express.json({limit: '1mb'})); // Limit for shared hosting
 
 // Model URL — downloads GGUF weights from HuggingFace on first run
+// Using GPT-2 quantized which is ~50MB and works on limited RAM
 const MODEL_URL = process.env.MODEL_URL || 'https://huggingface.co/Xenova/quantized-gpt2/resolve/main/gpt2-q4_0.gguf';
 
 // Initialize LLM
@@ -22,8 +23,9 @@ async function getLLM() {
     console.log(`Loading model from: ${MODEL_URL}`);
     llm = new LLM({
       model: MODEL_URL,
-      // Use WASM backend (no native binaries needed)
-      backend: 'wasm'
+      backend: 'wasm', // Use WASM backend (no native binaries needed)
+      n_threads: 1,   // Limit threads for shared hosting
+      n_ctx: 512,     // Reduce context window for low RAM
     });
     await llm.init();
     console.log('llama.cpp model loaded successfully');
@@ -47,11 +49,11 @@ app.post('/v1/chat/completions', async (req, res) => {
     ).join('\n') + '\nASSISTANT: ';
 
     const result = await model.generate(prompt, {
-      n_predict: max_tokens,
+      n_predict: Math.min(max_tokens, 200), // Cap tokens for shared hosting
       temp: temperature,
       top_k: 40,
       top_p: 0.9,
-      repeat_last_n: 64,
+      repeat_last_n: 32,    // Reduce for memory
       repeat_penalty: 1.1,
       stream: false
     });
